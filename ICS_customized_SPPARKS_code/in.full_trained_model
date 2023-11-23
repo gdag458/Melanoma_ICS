@@ -1,0 +1,73 @@
+# SPPARKS Potts tests on generic lattice
+
+seed		 8377 #57671 56684 #56659 #56779 #56789
+
+app_style	 rxn/diff/custom 4 2 1 1 2 0.03 1 200 1 3000 # 4 max pixel  occupancy, 2 cancer occupancy, 1 Tc occupancy, 1 Te occupancy, 2 mac occupancy,  0.03 T cell stick factor, 1 pd1 factor, 200 prolif/rec michaelis-menten threshold, do carrying capacity? 0 for no 1 for yes, 3000 tcell carrying capacity
+
+dimension	 2
+lattice		 sq/4n 1.0 # number of neighbors
+boundary	 p p p
+
+region		 box block 0 100 0 100 0 1 # 0 20 0 20 -1 1 # Size of Lattice I think this may be x, y
+create_box	 box
+create_sites	 box
+
+# Each discrete number is a separate voxel, bounds are inclusive. 0 0 0 0 refers to one voxel. What about z?
+#region		 sim block 0 100 0 100 0 1 # block over which recruiting points are placed for T cells, check whether col degree includes 0
+#region		 Cancer block 0 100 0 100 0 1 #25 44 20 33 -1 1 # Initial tumor mass
+region		 LatticeTop block 0 100 0 0 0 1
+region		 LatticeBottom block 0 100 99 100 0 1
+region		 LatticeLeft block  0 0 1 98 0 1
+region		 LatticeRight block 99 100 1 98 0 1
+#region		 TGFbField block 0 65 0 49 -1 1 # TGFB field
+
+read_sites       SPPARKS_IMC_init_files/fencing_test_with_full_lining_unicancDens_1_cd8ap50_small_SPPARKS_init #SPPARKS_IMC_init_files/06RD_responder_SPPARKS_init
+
+
+#set		 i5 value 1 region sim fraction 0.0  #0.01, 0.03 # uniform recruiting point placement rate
+#set		 i2 value 1 region Cancer fraction 0.0 #0.1, 0.05
+set		 i8 value 1 region LatticeTop fraction 1 # set boundary "population"
+set		 i8 value 1 region LatticeBottom fraction 1
+set      i8 value 1 region LatticeLeft fraction 1
+set      i8 value 1 region LatticeRight fraction 1
+
+sector		no
+solve_style     tree
+
+add_species	A # 0 CD8+ T Cells
+add_species	B # 1 Cancer
+add_species	C # 2 Exhausted CD8+ T cells
+add_species	D # 3 Dead cells
+add_species	E # 4 Recruiting
+add_species	F # 5 code output signal
+add_species	G # 6 Macrophages
+add_species	H # 7 Lattice edge
+
+add_rxn	    0 local B nbr 0.000668 local B nbr # 0.000668, 0.00125,  0.006944 Cancer Growth, 0.0006685 for 7.2 median doubling time
+add_rxn	    1 local E nbr 0.03125 local E nbr # 0.03125, 0.125, 2, 20 # Activated CD8 recruiting. was 14
+add_rxn	    2 local A nbr 0.01 local A A nbr  # was 0.01 most recently, 0.014, 0.125 Effector CD8 Proliferation. was 2
+add_rxn	    3 local A nbr B 0.04 local A nbr D # 0.04 0.08 CD8 killing Cancer
+add_rxn	    4 local A nbr 0.2375 local nbr A # 0.2375 0.4725 real value = 0.95? or 0.95/#neighbors? # CD8 motility !!! Change to motility?
+add_rxn	    5 local C nbr 0.2375 local nbr C # exhausted cd8 motility
+add_rxn	    6 local C nbr 0.002 local nbr # 0.002, Exhausted T cell death
+add_rxn	    7 local A nbr B 0.01591962 local C nbr B # 0.03,0.01591962 macCancOpt, T cell exhaustion by cancer
+add_rxn	    8 local H nbr 0.0 local H nbr # 0.005 exterior cells floating in
+add_rxn	    9 local E nbr 0.1389 local E nbr # 0.1389, 0.01 0.03(most recent for bimodal) Macrophage recruitment
+add_rxn	    10 local G nbr 0.059375 local nbr G #0.059375 0.11875 Macrophage motility
+add_rxn	    11 local G nbr A 0.05802534 local G nbr C # 0.05, 0.05802534 macCancOpt, Macrophage inhibiting activated CD8+
+add_rxn     12 local G nbr 0.001984 local nbr # 0.001984 Macrophage death
+add_rxn     13 local G A nbr 0.05802534 local G C nbr # 0.05, 0.03 0.05125 Local macrophage inhibition of activated CD8+
+add_rxn     14 local A B nbr 0.04 local A D nbr # 0.04 Local CD8+ killing local cancer
+add_rxn     15 local A B nbr 0.01591962 local C B nbr # 0.03 Local cancer inhibiting local cytotoxic CD8+ T cell
+#add_rxn     16 local D nbr 0.00694 local nbr # Diminish total dead cells
+
+diag_style propensity
+diag_style array i1 sum i2 sum i3 sum i4 sum i5 sum i6 sum i7 sum i8 sum
+
+stats           1.0
+#dump            1 text 1.0 dump.rxn_diff id i1 i2 i3 x y z
+#dump            1 sites 1.0 dump.2D_model.* id i1 i2 i3 i4 i5 i6 i7 i8 i9
+#dump            1 vtk 1.0 dump.rxn_diff.* i1
+#dump_modify	1 vtk 10 10 10 0 100
+#dump_modify	1 sort id
+run             2000 # 2000
