@@ -13,13 +13,13 @@ module load GCC/7.3.0-2.30 OpenMPI/3.1.1
 
 Navigate into the src directory and build the ICS_model executable using:
 
-cd src; make clean-all; make redsky
+make clean-all; make redsky
 
 Move the executable "spk_redsky", the example initialization file, 16BL_responder_SPPARKS_init, as well as the SPPARKS input file, in.full_trained_model, into a new directory within "ICS_Model" called "simulation_execution":
 
-cd ..; mkdir simulation_execution; cp src/spk_redsky simulation_execution; cp ICS_customized_SPPARKS_code/in.full_trained_model simulation_execution; cp ICS_customized_SPPARKS_code/16BL_responder_SPPARKS_init simulation_execution; cd simulation_execution
+mkdir simulation_execution; cp src/spk_redsky simulation_execution; cp ICS_customized_SPPARKS_code/in.full_trained_model simulation_execution; cp ICS_customized_SPPARKS_code/16BL_responder_SPPARKS_init simulation_execution;
 
-Note that the initialization file may be changed out with other slide initialization files which can be found in the data files for Figure S6. When changing the initialization file, make sure to also change its reference in the input file (in.full_trained_model) following SPPARKS syntax. Once in the simulation_execution directory, the ICS model can be run with the command:
+Note that the initialization file may be changed out with other slide initialization files which can be found in the data files for Figure S6. When changing the initialization file, make sure to also change its reference in the input file (in.full_trained_model) following SPPARKS syntax. Once in the simulation_execution directory, the ICS model can be run from within simulation_execution with the command:
 
 mpirun -np 1 ./spk_redsky < in.full_trained_model
 
